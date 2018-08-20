@@ -1,0 +1,78 @@
+---
+title: "penplaqr vignette"
+author: "Scott Coggeshall"
+date: "August 6, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(penplaqr)
+library(MASS)
+
+```
+
+This is a short vignette to demonstrate the main model-fitting function from penplaqr, the R package we are developing for fitting high-dimensional partially linear quantile regression models. 
+
+For this example, we simulated $n = 150$ observations on $p = 200$ covariates and a single outcome. The covariates were all simulated from independent $N(0, 1)$ distributions. Letting $x_i$ indicate the $i^{th}$ covariate, the outcome variable $y$ was then simulated as
+$$
+\begin{equation}
+y = \boldsymbol{\beta}^T\boldsymbol{x}_{1:195} + g(\boldsymbol{x}_{196:200}) + \epsilon
+\end{equation}
+$$
+where
+ 
+- $\beta_1, \beta_2, \ldots, \beta_{150} = 0$
+- $\beta_{151}, \beta_{152}, \ldots, \beta_{195} \overset{iid}{\sim} N(3, 1)$
+- $g(\boldsymbol{x}_{196:200}) = sin(x_{196}) + log(x_{196}^2) + \ldots + sin(x_{200}) + log(x_{200}^2)$
+- $\epsilon \sim N(0, 1)$
+
+The main model-fitting function is "penplaqr". Its arguments and syntax are highly similar to the "plaqr"
+function from the "plaqr" package, on which it was based. The code below shows how the data described above were simulated and then how the high-dimensional partially linear quantile regression model was fit to these data using "penplaqr". We fit a number of models at different values of the tuning parameter $\lambda$. A summary of the resulting solution paths is shown in Figure
+
+
+```{r penplaqr_ex, cache = T }
+
+# setting sample size and dimension of predictors
+# note that p > n
+p <- 200
+n <- 150
+
+# simulating covariate data from a multivariate normal distribution
+set.seed(30)
+X <- mvrnorm(n, mu = rep(0, p), Sigma = diag(1, nrow = p))
+
+# simulating outcome data
+# the first 150 covariates are unrelated to the outcome
+# the next 45 covariates are linearly related to the outcome
+# the final 5 covariates are related to the outcome through nonlinear functions
+
+y <- X[,151:195]%*%rnorm(45, 3, sd = 1) + sin(X[,196:200])%*%rep(1, 5) + log(X[,196:200]^2)%*%rep(1, 5) + rnorm(n)
+
+lambda_vals <- seq(from = 1, to = 20, by = 1)
+my_dat <- as.data.frame(cbind(y, X))
+
+names(my_dat) <- c("y", paste0("V", 1:200))
+
+lin_formula <- as.formula(paste("y ~", paste0("V", 1:195, collapse = " + ")))
+nonlin_formula <- as.formula(paste("~", paste0("V", 196:p, collapse = " + ")))
+model_list <- vector(mode = "list", length = length(lambda_vals))
+for(i in seq_along(lambda_vals)){
+model_list[[i]] <- penplaqr(lin_formula, nonlinVars = nonlin_formula, data = my_dat, tau = .5, lambda = lambda_vals[i], a= 3.7,
+                    penalty = "SCAD")
+
+}
+
+zero_coefs <- lapply(model_list, function(x) sum(coef(x) == 0))
+
+plot(x = lambda_vals, y = zero_coefs, type = "b")
+```
+
+
+The next steps for this project are
+
+- Implement the LASSO penalty
+- Write code for performing tuning parameter selection
+- Refine the main model fitting function (e.g. write code for handling missing data, clean up the function's output, etc.)
+
+
