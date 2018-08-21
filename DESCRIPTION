@@ -13,3 +13,5 @@ Depends: quantreg, splines
 Imports: rqPen,
          plaqr
 RoxygenNote: 6.0.1
+URL: http://github.com/penplaqr/penplaqr
+BugReports: http://github.com/penplaqr/penplaqr/issues
