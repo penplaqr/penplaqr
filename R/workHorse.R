@@ -112,12 +112,13 @@ penalty_weights <- function(beta_vec, n,  penalty_type = NULL, penalty_deriv = N
 #' @param penalty a character string indicating which penalty should be used in fitting the model.
 #' @param penalty_deriv an optional user-specified function for computing the derivative of the penalty function.
 #' @param a additional tuning paramater for certain penalty functions.
+#' @param epsilon scalar value for determining when convergence has been reached.
 #' @param data a data frame
 #' @import quantreg
 #' @import splines
 #' @export
 penplaqr <- function(formula, nonlinVars = NULL, tau = .5, lambda = NULL, penalty = "SCAD", penalty_deriv = NULL, a = NULL, data = NULL, subset,
-                      na.action, method, model = TRUE, contrasts = NULL, init_beta = NULL,
+                      na.action, method = c("br", "fn"), model = TRUE, contrasts = NULL, init_beta = NULL,
                      splinesettings = NULL, epsilon = 1e-6, ...){
   if(length(tau)>1) stop("tau must be a number (not a vector) strictly between 0 and 1.")
   if(class(nonlinVars)!="formula" & !is.null(nonlinVars)){
@@ -128,6 +129,7 @@ penplaqr <- function(formula, nonlinVars = NULL, tau = .5, lambda = NULL, penalt
   nonlinvars <- NULL
   linvars <- attr(terms(formula, data=data), "term.labels")
 
+  # creating spline terms for non-linear portion of the model
   if(is.null(nonlinVars)){
     int <- ifelse(attr(terms(formula, data=data),"intercept")==1, "1", "0")
     rqcall$formula <- update(formula, paste(c("~",linvars,int),
@@ -162,6 +164,7 @@ penplaqr <- function(formula, nonlinVars = NULL, tau = .5, lambda = NULL, penalt
     rqcall$formula <- update(formula, paste(c("~","1",linvars,nonlinvarsbs),
                                             collapse="+"))
   }
+
   # creating augmented dataset
   linear_terms <- attr(terms(formula, data = data), "term.labels")
 
@@ -185,7 +188,7 @@ penplaqr <- function(formula, nonlinVars = NULL, tau = .5, lambda = NULL, penalt
   augmented_data <- rbind(temp_dat, extra_observations)
 
   # calculating weights at initial value for beta
-  if(is.null(init_beta) )init_beta <- rep(0, length(linear_terms))
+  if(is.null(init_beta)) init_beta <- rep(0, length(linear_terms))
 
   init_weights <- penalty_weights(abs(init_beta), n = nrow(data),
                                   penalty_type = penalty, penalty_deriv = penalty_deriv, lambda = lambda, a = a)
@@ -194,7 +197,9 @@ penplaqr <- function(formula, nonlinVars = NULL, tau = .5, lambda = NULL, penalt
   rqcall[[1]] <- as.name("rq")
   rqcall$nonlinVars <- rqcall$splinesettings <- rqcall$lambda <- rqcall$penalty <- rqcall$epsilon <-  NULL
   rqcall$data <- augmented_data
+  rqcall$method <- method
   rqcall$weights <- init_weights
+  rqcall$a <- NULL
   # running first iteration
   first_fit <- eval.parent(rqcall)
   class(first_fit) <- "rq"
@@ -202,6 +207,8 @@ penplaqr <- function(formula, nonlinVars = NULL, tau = .5, lambda = NULL, penalt
   current_beta <- summary(first_fit)$coefficients[linear_terms, 1]
   prev_beta <- init_beta
   iter <- 1
+
+  # iterating until convergence
   while(sum(abs(current_beta - prev_beta)) > epsilon){
 
    prev_beta <- current_beta
@@ -218,6 +225,7 @@ penplaqr <- function(formula, nonlinVars = NULL, tau = .5, lambda = NULL, penalt
     iter <- iter + 1
 
   }
+
   if(iter == 1) return(first_fit)
   if(iter > 1) return(current_fit)
 
