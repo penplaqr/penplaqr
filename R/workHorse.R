@@ -205,11 +205,12 @@ penplaqr <- function(formula, nonlinVars = NULL, tau = .5, lambda = NULL, penalt
   class(first_fit) <- "rq"
 
   current_beta <- summary(first_fit)$coefficients[linear_terms, 1]
+  current_beta <- coef(first_fit)[linear_terms]
   prev_beta <- init_beta
   iter <- 1
 
   # iterating until convergence
-  while(sum(abs(current_beta - prev_beta)) > epsilon){
+  while(sum((current_beta - prev_beta)^2) > epsilon){
 
    prev_beta <- current_beta
 
@@ -220,7 +221,8 @@ penplaqr <- function(formula, nonlinVars = NULL, tau = .5, lambda = NULL, penalt
    current_fit <- eval.parent(rqcall)
    class(current_fit) <- "rq"
 
-   current_beta <- summary(current_fit)$coefficients[linear_terms, 1]
+
+   current_beta <- coef(current_fit)[linear_terms]
 
     iter <- iter + 1
 
