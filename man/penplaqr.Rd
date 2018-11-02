@@ -6,9 +6,29 @@
 \usage{
 penplaqr(formula, nonlinVars = NULL, tau = 0.5, lambda = NULL,
   penalty = "SCAD", penalty_deriv = NULL, a = NULL, data = NULL, subset,
-  na.action, method, model = TRUE, contrasts = NULL, init_beta = NULL,
-  splinesettings = NULL, epsilon = 1e-06, ...)
+  na.action, method = c("br", "fn"), model = TRUE, contrasts = NULL,
+  init_beta = NULL, splinesettings = NULL, epsilon = 1e-06, ...)
+}
+\arguments{
+\item{formula}{a formula object containing the response variable on the LHS and the variables to be modeled with
+linear terms on the RHS.}
+
+\item{nonlinVars}{a formula object with an empty LHS and the variables to be modeled non-linearly on the RHS.}
+
+\item{tau}{a scalar indicating the desired quantile.}
+
+\item{lambda}{a scalar indicating the value of the tuning parameter.}
+
+\item{penalty}{a character string indicating which penalty should be used in fitting the model.}
+
+\item{penalty_deriv}{an optional user-specified function for computing the derivative of the penalty function.}
+
+\item{a}{additional tuning paramater for certain penalty functions.}
+
+\item{data}{a data frame}
+
+\item{epsilon}{scalar value for determining when convergence has been reached.}
 }
 \description{
-\code{penplaqr} fits a partially linear penalized quantile regression
+\code{penplaqr} fits a partially linear penalized quantile regression.
 }
