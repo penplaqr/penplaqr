@@ -7,7 +7,7 @@
 #' @param tau a numeric-valued scalar between 0 and 1.
 #' @param x a numeric-valued scalar or vector.
 #'
-#' @return a numeric or vector of numerics of length \code{length(tau)}.
+#' @return a numeric or vector of numerics of length \code{length(x)}.
 check <- function(tau, x){
 
   x*(tau - (x < 0))
@@ -25,11 +25,13 @@ check <- function(tau, x){
 #' @param resids a vector of residuals from the candidate model.
 #' @param p_linear the number of candidate linear covariates.
 #' @param degree the degrees of freedom of the candidate model.
-QBIC <- function(lambda, resids, p_linear, degfree){
+#'
+#' @export
+QBIC <- function(tau, resids, p_linear, degfree){
 
   n <- length(resids)
 
-  log(sum(check(resids))) - degfree*log(p_linear)*log(log(n))/(2*n)
+  log(sum(check(tau, resids))) + degfree*log(p_linear)*log(log(n))/(2*n)
 
 }
 
@@ -103,7 +105,7 @@ penalty_weights <- function(beta_vec, n,  penalty_type = NULL, penalty_deriv = N
 
 #' Partially linear penalized quantile regression
 #'
-#' \code{penplaqr} fits a partially linear penalized quantile regression
+#' \code{penplaqr} fits a partially linear penalized quantile regression.
 #' @param formula a formula object containing the response variable on the LHS and the variables to be modeled with
 #' linear terms on the RHS.
 #' @param nonlinVars a formula object with an empty LHS and the variables to be modeled non-linearly on the RHS.
@@ -232,6 +234,125 @@ penplaqr <- function(formula, nonlinVars = NULL, tau = .5, lambda = NULL, penalt
   if(iter > 1) return(current_fit)
 
 }
+
+
+#' Average Number of False Variables.
+#'
+#' Given coefficient estimates from a set of simulations, \code{fv} calculates the average number of
+#' zero-valued coefficients that are incorrectly selected to be in the model.
+#'
+#' @param model_coefficients a vector or matrix containing the coefficient estimates. If a matrix,
+#' then the coefficients should vary by row and the simulations should vary by column.
+#' @param true_coefficients a vector of indices of the true non-zero coefficients
+#' @param threshold a scalar threshold below which coefficients should be set to zero
+#'
+#' @export
+#'
+#' @return a scalar indicating the average number of zero-valued coefficients incorrectly selected to be in the model
+fv <- function(model_coefficients, true_coefficients, threshold){
+
+  # checking if coefficients from just a single simulation have been supplied,
+  # in which case the average is just the number of false variables
+  if(class(model_coefficients == "numeric") || (class(model_coefficients == "matrix") && ncol(model_coefficients == 1))){
+
+    sum(model_coefficients[-true_coefficients] > threshold)
+
+  } else{
+
+    mean(colSums(model_coefficients[-true_coefficients, ] > threshold))
+
+
+  }
+}
+
+#' Average Number of True Variables
+#'
+#' Given coefficient estimates from a set of simulations, \code{tv} calculates the average number of
+#' non-zero valued coefficients that are correctly selected to be in the model.
+#'
+#' @param model_coefficients a vector or matrix containing the coefficient estimates. If a matrix,
+#' then the coefficients should vary by row and the simulations should vary by column.
+#' @param true_coefficients a vector of indices of the true non-zero coefficients
+#' @param threshold a scalar threshold below which coefficients should be set to zero
+#'
+#' @export
+#'
+#' @return a scalar indicating the average number of non-zero valued coefficients correctly selected to be in the model
+fv <- function(model_coefficients, true_coefficients, threshold){
+
+  # checking if coefficients from just a single simulation have been supplied,
+  # in which case the average is just the number of false variables
+  if(class(model_coefficients == "numeric") || (class(model_coefficients == "matrix") && ncol(model_coefficients == 1))){
+
+    sum(model_coefficients[true_coefficients] > threshold)
+
+  } else{
+
+    mean(colSums(model_coefficients[true_coefficients, ] > threshold))
+
+
+  }
+}
+
+
+#' Probability of Selecting the True Model.
+#'
+#' Given coefficient estimates from a set of simulations, \code{prob_true}
+#' calculates the proportion of simulations that selected the true model exactly.
+#'
+#' @param model_coefficients a vector or matrix of coefficient estimates. If a matrix,
+#' then the coefficients should vary by row and the simulations should vary by column.
+#' @param true_coefficients a vector of indices of the true non-zero coefficients.
+#' @param threshold a scalar value below which a coefficient should be considered
+#' equal to zero.
+#'
+#' @export
+#' @return a scalar indicating the proportion of simulations in which the true
+#' model was selected exactly.
+prob_true <- function(model_coefficients, true_coefficients, threshold){
+
+  if(class(model_coefficients == "numeric")){
+
+    all(model_coefficients[true_coefficients] > threshold) & !any(model_coefficients[-true_coefficients] > threshold)
+
+
+
+  } else{
+
+    mean(apply(model_coefficients, 2, function(x) all(x[true_coefficients] > threshold)) & !any(model_coefficients[-true_coefficients] > threshold))
+
+    }
+
+
+}
+
+
+#' Mean Squared Error.
+#'
+#' Given coefficient estimates from a set of simulations, \code{mse} calculates
+#' the mean squared error of the estimates average across all simulations.
+#'
+#' @param model_coefficients a vector or matrix of coefficient estimates. If a matrix,
+#' then the coefficients should vary by row and the simulations should vary by column.
+#' @param beta0 a numeric vector containing the true coefficient values.
+#' @param threshold a scalar threshold below which coefficients should be set to zero.
+mse <- function(model_coefficients, beta0, threshold){
+
+  model_coefficients[model_coefficients < threshold] <- 0
+
+  if(class(model_coefficients) == "numeric"){
+   sum((model_coefficients - beta0)^2)
+   } else{
+
+   mean(colSums((model_coefficients - beta0)^2))
+
+   }
+
+
+}
+
+
+
 
 
 
