@@ -12,7 +12,7 @@ check(tau, x)
 \item{x}{a numeric-valued scalar or vector.}
 }
 \value{
-a numeric or vector of numerics of length \code{length(tau)}.
+a numeric or vector of numerics of length \code{length(x)}.
 }
 \description{
 \code{check} computes the "check" loss function used in quantile regression.

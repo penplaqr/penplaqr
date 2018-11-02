@@ -6,6 +6,11 @@
 \usage{
 augment_data(n_linvars, n_nonlinvars)
 }
+\arguments{
+\item{n_linvars}{the number of predictors modeled with linear terms}
+
+\item{n_nonlinvars}{the number of predictors modeled non-linearly}
+}
 \description{
 \code{augment_data} creates an augmented dataset for use in the weighted
 unpenalized quantile regression as part of the algorithm described in

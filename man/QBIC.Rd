@@ -4,14 +4,14 @@
 \alias{QBIC}
 \title{High-dimensional BIC.}
 \usage{
-QBIC(lambda, resids, p_linear, degfree)
+QBIC(tau, resids, p_linear, degfree)
 }
 \arguments{
-\item{lambda}{a nonnegative scalar; the tuning parameter.}
-
 \item{resids}{a vector of residuals from the candidate model.}
 
 \item{p_linear}{the number of candidate linear covariates.}
+
+\item{lambda}{a nonnegative scalar; the tuning parameter.}
 
 \item{degree}{the degrees of freedom of the candidate model.}
 }
